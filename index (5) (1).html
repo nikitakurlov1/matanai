@@ -1,0 +1,1044 @@
+
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nka_ai - Математичний асистент</title>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+
+        :root {
+            --primary: #6a00ff;
+            --bg-card: rgba(30, 30, 30, 0.7);
+            --text: #f0f0f0;
+            --secondary: #aaa;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --error: #f44336;
+        }
+
+        body {
+            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') center/cover fixed;
+            min-height: 100vh;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        .rain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        .header {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+            text-shadow: 0 0 8px rgba(106, 0, 255, 0.4);
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 40px 0 100px;
+            z-index: 1;
+        }
+
+        .chat-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            height: calc(100vh - 150px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 10px;
+            background: rgba(20, 20, 20, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+            max-width: 85%;
+            font-size: 14px;
+        }
+
+        .user-message {
+            margin-left: auto;
+        }
+
+        .ai-message {
+            margin-right: auto;
+        }
+
+        .message-container {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .user-avatar {
+            background: rgba(106, 0, 255, 0.2);
+            color: var(--primary);
+        }
+
+        .ai-avatar {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+        }
+
+        .user-message .message-bubble {
+            background: var(--primary);
+            color: white;
+            border-radius: 12px 2px 12px 12px;
+        }
+
+        .ai-message .message-bubble {
+            background: rgba(60, 60, 60, 0.6);
+            color: var(--text);
+            border-radius: 2px 12px 12px 12px;
+        }
+
+        .message-content {
+            word-wrap: break-word;
+        }
+
+        .message-content img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        .message-content pre {
+            margin: 8px 0;
+            border-radius: 6px;
+            background: rgba(20, 20, 20, 0.8) !important;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .message-content code {
+            border-radius: 4px;
+            padding: 2px 4px;
+            background: rgba(40, 40, 40, 0.6);
+            font-size: 90%;
+        }
+
+        .message-content pre code {
+            padding: 12px;
+            background: transparent;
+            display: block;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(60, 60, 60, 0.6);
+            border-radius: 12px;
+            max-width: 60px;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #aaa;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typing 1.2s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+            }
+
+            30% {
+                transform: translateY(-4px);
+            }
+        }
+
+        .input-area {
+            position: fixed;
+            bottom: 10px;
+            width: calc(100% - 20px);
+            max-width: 900px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            z-index: 2;
+        }
+
+        .message-form {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .message-input {
+            width: 100%;
+            padding: 10px 90px 10px 12px;
+            background: rgba(40, 40, 40, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 14px;
+            resize: none;
+            min-height: 40px;
+            max-height: 120px;
+            font-family: inherit;
+        }
+
+        .input-buttons {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .attach-button,
+        .send-button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .attach-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        .attach-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .send-button {
+            background: var(--primary);
+            color: white;
+        }
+
+        .send-button:hover {
+            background: #8a00ff;
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            font-size: 11px;
+            color: var(--secondary);
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .image-preview {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            margin-bottom: 8px;
+            background: rgba(40, 40, 40, 0.9);
+            border-radius: 8px;
+            padding: 8px;
+            display: none;
+        }
+
+        .image-preview img {
+            max-height: 100px;
+            max-width: 100px;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .image-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .remove-image {
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(106, 0, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .math-solution {
+            background: rgba(0, 50, 100, 0.1);
+            border-left: 3px solid var(--primary);
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .matlab-output {
+            background: rgba(0, 100, 0, 0.1);
+            border-left: 3px solid var(--success);
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 0 8px 8px 0;
+            font-family: monospace;
+        }
+
+        .julia-output {
+            background: rgba(120, 0, 120, 0.1);
+            /* Purple tint for Julia */
+            border-left: 3px solid #b300b3;
+            /* A distinct purple */
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 0 8px 8px 0;
+            font-family: monospace;
+        }
+
+
+        .verification-result {
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-weight: 500;
+        }
+
+        .verification-success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .verification-error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+
+        .step-header {
+            font-weight: 600;
+            color: var(--primary);
+            margin: 12px 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-number {
+            background: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .uploaded-image {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        pre:hover .copy-button {
+            opacity: 1;
+        }
+
+        .copy-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                margin-bottom: 120px;
+            }
+
+            .message {
+                max-width: 95%;
+                font-size: 13px;
+            }
+
+            .input-area {
+                bottom: 5px;
+                width: calc(100% - 10px);
+            }
+
+            .message-input {
+                padding-right: 100px;
+            }
+
+            .uploaded-image {
+                max-width: 200px;
+                max-height: 150px;
+            }
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="rain" id="rain"></div>
+    <div class="header">Nka_ai</div>
+
+    <div class="main-container">
+        <div class="chat-container">
+            <div class="chat-header">Математичний асистент з перевіркою</div>
+            <div class="chat-messages" id="chatMessages"></div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <form class="message-form" id="messageForm">
+            <div class="input-wrapper">
+                <div class="image-preview" id="imagePreview">
+                    <div class="image-preview-header">
+                        <span>Завантажене зображення</span>
+                        <button type="button" class="remove-image" id="removeImage">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <img id="previewImg" alt="Preview">
+                </div>
+                <textarea class="message-input" id="messageInput"
+                    placeholder="Введіть математичну задачу або завантажте фото..." rows="1"></textarea>
+                <div class="input-buttons">
+                    <button type="button" class="attach-button" id="attachButton">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                    <button type="submit" class="send-button" id="sendButton">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+        </form>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        // Конфігурація
+        const CONFIG = {
+            API_KEY: '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',
+            API_URL: 'https://openrouter.ai/api/v1/chat/completions',
+            MODEL: 'google/gemini-flash-1.5',
+            MAX_RETRIES: 3,
+            RETRY_DELAY: 1000,
+            MAX_CONVERSATION_HISTORY: 5 // Limit conversation history for self-correction
+        };
+
+        // Елементи DOM
+        const elements = {
+            chatMessages: document.getElementById('chatMessages'),
+            messageInput: document.getElementById('messageInput'),
+            messageForm: document.getElementById('messageForm'),
+            status: document.getElementById('status'),
+            attachButton: document.getElementById('attachButton'),
+            fileInput: document.getElementById('fileInput'),
+            imagePreview: document.getElementById('imagePreview'),
+            previewImg: document.getElementById('previewImg'),
+            removeImage: document.getElementById('removeImage'),
+            sendButton: document.getElementById('sendButton')
+        };
+
+        // Стан
+        let state = {
+            uploadedImage: null,
+            isProcessing: false,
+            conversationHistory: [] // Store conversation history for AI self-correction
+        };
+
+        // Генерація дощу
+        function createRain() {
+            const rain = document.getElementById('rain');
+            rain.innerHTML = '';
+            const drops = window.innerWidth < 768 ? 30 : 50;
+            for (let i = 0; i < drops; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = `${Math.random() * 100}%`;
+                drop.style.animationDuration = `${Math.random() * 0.5 + 0.5}s`;
+                drop.style.animationDelay = `${Math.random() * 2}s`;
+                drop.style.top = `-${Math.random() * 100}vh`;
+                rain.appendChild(drop);
+            }
+        }
+
+        // API функції
+        async function callAPI(messages) {
+            for (let i = 0; i < CONFIG.MAX_RETRIES; i++) {
+                try {
+                    const response = await fetch(CONFIG.API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${CONFIG.API_KEY}`,
+                            'HTTP-Referer': window.location.href,
+                            'X-Title': 'Nka_ai Math Assistant'
+                        },
+                        body: JSON.stringify({
+                            model: CONFIG.MODEL,
+                            messages: messages,
+                            temperature: 0.3,
+                            max_tokens: 4000
+                        })
+                    });
+
+                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                    const data = await response.json();
+                    return data.choices[0].message.content;
+                } catch (error) {
+                    console.error(`Спроба ${i + 1} невдала:`, error);
+                    if (i === CONFIG.MAX_RETRIES - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY * (i + 1)));
+                }
+            }
+        }
+
+        // Розпізнавання тексту з зображення
+        async function recognizeTextFromImage(imageData) {
+            updateStatus('Розпізнавання тексту з зображення...');
+            const messages = [{
+                role: 'user',
+                content: [
+                    { type: 'text', text: 'Розпізнай математичну задачу з цього зображення. Виведи ТІЛЬКИ текст задачі, без коментарів.' },
+                    { type: 'image_url', image_url: { url: imageData } }
+                ]
+            }];
+            return await callAPI(messages);
+        }
+
+        // Основні функції обробки
+        async function solveWithExplanation(problem) {
+            updateStatus('Розв\'язую задачу...');
+            const prompt = `Розв'яжи цю математичну задачу детально.
+
+Задача: ${problem}
+
+Дай відповідь у такому форматі:
+1. **Аналіз задачі**: Що дано і що потрібно знайти
+2. **Теоретична основа**: Які формули та теореми використовуються
+3. **Покрокове розв'язання**: Детальні кроки з поясненнями
+4. **Перевірка**: Перевір правильність розв'язку
+5. **Відповідь**: Фінальна відповідь
+
+Використовуй LaTeX для формул (обгортай в $..$ або $$..$$).`;
+            return await callAPI([{ role: 'user', content: prompt }]);
+        }
+
+        async function generateMatlabCode(problem) {
+            updateStatus('Генерую MATLAB/Octave код...');
+            const prompt = `Напиши MATLAB/Octave код для розв'язання цієї задачі.
+
+Задача: ${problem}
+
+Вимоги:
+1. Код має бути повним і працездатним
+2. Використовуй вбудовані функції MATLAB/Octave (наприклад, roots, solve, eig тощо) якщо потрібно
+3. Додай коментарі українською
+4. Виведи проміжні результати
+5. Фінальний результат виведи як: disp(['Відповідь: ', num2str(result)])
+6. Обгорни код в \`\`\`matlab ... \`\`\`
+7. Переконайся, що код сумісний з MATLAB та Octave`;
+
+            return await callAPI([{ role: 'user', content: prompt }]);
+        }
+
+        async function generateJuliaCode(problem) {
+            updateStatus('Генерую Julia код...');
+            const prompt = `Напиши Julia код для розв'язання цієї задачі.
+
+Задача: ${problem}
+
+Вимоги:
+1. Код має бути повним і працездатним
+2. Використовуй вбудовані функції Julia (наприклад, solve, roots, eigen тощо) якщо потрібно. Для символьних обчислень можеш використовувати SymP або Symbolics.jl.
+3. Додай коментарі українською
+4. Виведи проміжні результати
+5. Фінальний результат виведи як: println("Відповідь: ", result)
+6. Обгорни код в \`\`\`julia ... \`\`\`
+7. Переконайся, що код сумісний з Julia.`;
+
+            return await callAPI([{ role: 'user', content: prompt }]);
+        }
+
+        async function selfCorrectAndRefine(problem, previousSolution, contextMessages) {
+            updateStatus('ШІ самокорекція та уточнення...');
+            const prompt = `Ти математичний асистент. Тобі потрібно переглянути своє попереднє розв'язання та код для задачі, і якщо є якісь неточності або можливості для покращення, внести виправлення та надати остаточний, покращений розв'язок.
+
+Задача: ${problem}
+
+Попереднє розв'язання:
+${previousSolution}
+
+На основі цього, проаналізуй:
+- Чи є помилки в логіці або обчисленнях?
+- Чи можна покращити пояснення або зробити їх більш зрозумілими?
+- Чи є можливості для більш ефективного або елегантного коду?
+
+Надай покращений розв'язок, використовуючи той самий детальний формат (Аналіз, Теоретична основа, Покрокове розв'язання, Перевірка, Відповідь) та Julia/MATLAB/Octave код. Якщо попередній розв'язок був коректним, підтверди це і можливо додай додаткові деталі.`;
+
+            const messages = [...contextMessages.slice(-CONFIG.MAX_CONVERSATION_HISTORY), { role: 'user', content: prompt }];
+            return await callAPI(messages);
+        }
+
+        async function verifyAndFinalize(problem, solution, matlabCode, juliaCode) {
+            updateStatus('Фіналізую відповідь та проводжу перевірку...');
+            const prompt = `Проаналізуй усі надані розв'язки та коди, щоб надати єдину, перевірену фінальну відповідь.
+
+Задача: ${problem}
+
+Математичний розв'язок:
+"${solution}"
+
+MATLAB/Octave код:
+"${matlabCode}"
+
+Julia код:
+"${juliaCode}"
+
+Порівняй результати та логіку з кожного джерела.
+Надай фінальну, перевірену відповідь, яка включає:
+1.  **Порівняння результатів**: Проаналізуй, чи співпадають відповіді з усіх методів. Визнач, який результат є найбільш достовірним або повним, якщо є розбіжності. Поясни причини будь-яких відмінностей.
+2.  **Детальна фінальна відповідь**: Надай остаточний, вивірений розв'язок задачі, інтегруючи найкращі аспекти з усіх наданих джерел. Це має бути кінцевий, чіткий і правильний результат.
+
+Використовуй LaTeX для формул (обгортай в $..$ або $$..$$).`;
+
+            // We need to pass the history to `callAPI` for better context.
+            // But for `verifyAndFinalize`, the prompt contains all necessary info.
+            return await callAPI([{ role: 'user', content: prompt }]);
+        }
+
+        // Обробка повідомлень
+        async function processMessage(userMessage, image = null) {
+            if (state.isProcessing) return;
+            state.isProcessing = true;
+
+            try {
+                let problemText = userMessage;
+
+                // Если есть изображение, распознаем текст
+                if (image) {
+                    addMessage('user', userMessage || 'Завантажено зображення', image);
+                    const recognizedText = await recognizeTextFromImage(image);
+                    problemText = recognizedText;
+                    addMessage('ai', `📝 **Розпізнаний текст:**\n\n${recognizedText}`);
+                    state.conversationHistory.push({ role: 'assistant', content: `Розпізнаний текст: ${recognizedText}` });
+                } else {
+                    addMessage('user', userMessage);
+                }
+                state.conversationHistory.push({ role: 'user', content: userMessage });
+
+
+                // Крок 1: Математичне розв’язання
+                let solution = await solveWithExplanation(problemText);
+                addMessage('ai', solution, 'math-solution');
+                state.conversationHistory.push({ role: 'assistant', content: solution });
+
+
+                // Крок 2: MATLAB/Octave код
+                const matlabCode = await generateMatlabCode(problemText);
+                const cleanMatlabCode = matlabCode.match(/```matlab\n([\s\S]*?)```/)?.[1] || matlabCode;
+                addMessage('ai', `🔢 **MATLAB/Octave код для перевірки:**\n\n\`\`\`matlab\n${cleanMatlabCode}\n\`\`\``);
+                state.conversationHistory.push({ role: 'assistant', content: `MATLAB/Octave код: ${cleanMatlabCode}` });
+
+                // Крок 3: Julia код
+                const juliaCode = await generateJuliaCode(problemText);
+                const cleanJuliaCode = juliaCode.match(/```julia\n([\s\S]*?)```/)?.[1] || juliaCode;
+                addMessage('ai', `📈 **Julia код для перевірки:**\n\n\`\`\`julia\n${cleanJuliaCode}\n\`\`\``, 'julia-output');
+                state.conversationHistory.push({ role: 'assistant', content: `Julia код: ${cleanJuliaCode}` });
+
+                // Крок 4: Самокорекція та уточнення (необов'язково, можна додати умову)
+                const refinedSolution = await selfCorrectAndRefine(problemText, solution, state.conversationHistory);
+                addMessage('ai', `✨ **Уточнений математичний розв'язок:**\n\n${refinedSolution}`, 'math-solution');
+                state.conversationHistory.push({ role: 'assistant', content: refinedSolution });
+
+
+                // Крок 5: Фінальна перевірка
+                const finalVerification = await verifyAndFinalize(problemText, refinedSolution, cleanMatlabCode, cleanJuliaCode);
+                addMessage('ai', `✅ **Фінальна перевірка та відповідь:**\n\n${finalVerification}`, 'verification-result');
+                state.conversationHistory.push({ role: 'assistant', content: finalVerification });
+
+                updateStatus('');
+
+            } catch (error) {
+                console.error('Помилка:', error);
+                addMessage('ai', `❌ Виникла помилка: ${error.message}`);
+                updateStatus('');
+            } finally {
+                state.isProcessing = false;
+            }
+        }
+
+        // UI функції
+        function addMessage(role, content, className = '') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+
+            const container = document.createElement('div');
+            container.className = 'message-container';
+
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${role}-avatar`;
+            avatar.textContent = role === 'user' ? 'ВИ' : 'AI';
+
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble ${className}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            if (role === 'user' && typeof content === 'string' && content.includes('data:image')) {
+                contentDiv.innerHTML = '<p>Завантажене зображення:</p>';
+                const img = document.createElement('img');
+                img.src = content;
+                img.className = 'uploaded-image';
+                img.onclick = () => window.open(content, '_blank');
+                contentDiv.appendChild(img);
+            } else {
+                contentDiv.innerHTML = parseMarkdown(content);
+            }
+
+            // Додаємо кнопку копіювання для блоків коду
+            contentDiv.querySelectorAll('pre').forEach(pre => {
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-button';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i> Копіювати';
+                copyBtn.onclick = () => {
+                    const code = pre.querySelector('code').textContent;
+                    navigator.clipboard.writeText(code);
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Скопійовано!';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Копіювати';
+                    }, 2000);
+                };
+                pre.style.position = 'relative';
+                pre.appendChild(copyBtn);
+            });
+
+            bubble.appendChild(contentDiv);
+            container.appendChild(avatar);
+            container.appendChild(bubble);
+            messageDiv.appendChild(container);
+
+            elements.chatMessages.appendChild(messageDiv);
+
+            // Рендеримо математику
+            renderMathInElement(contentDiv, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\(', right: '\\)', display: false },
+                    { left: '\\[', right: '\\]', display: true }
+                ],
+                throwOnError: false
+            });
+
+            // Підсвічуємо код
+            contentDiv.querySelectorAll('pre code').forEach(block => {
+                hljs.highlightElement(block);
+            });
+
+            scrollToBottom();
+        }
+
+        function parseMarkdown(text) {
+            return marked.parse(text, {
+                breaks: true,
+                gfm: true,
+                highlight: (code, lang) => {
+                    if (lang && hljs.getLanguage(lang)) {
+                        return hljs.highlight(code, { language: lang }).value;
+                    }
+                    return code;
+                }
+            });
+        }
+
+        function updateStatus(text) {
+            elements.status.innerHTML = text ? `<span class="loading-spinner"></span> ${text}` : '';
+        }
+
+        function scrollToBottom() {
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'message ai-message';
+            indicator.id = 'typing-indicator';
+
+            const container = document.createElement('div');
+            container.className = 'message-container';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar ai-avatar';
+            avatar.textContent = 'AI';
+
+            const typing = document.createElement('div');
+            typing.className = 'typing-indicator';
+
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'typing-dot';
+                typing.appendChild(dot);
+            }
+
+            container.appendChild(avatar);
+            container.appendChild(typing);
+            indicator.appendChild(container);
+
+            elements.chatMessages.appendChild(indicator);
+            scrollToBottom();
+
+            return indicator;
+        }
+
+        // Обробники подій
+        elements.messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = elements.messageInput.value.trim();
+            if (!message && !state.uploadedImage) return;
+
+            elements.sendButton.disabled = true;
+            elements.messageInput.value = '';
+            elements.messageInput.style.height = 'auto';
+
+            const imageToSend = state.uploadedImage;
+            if (state.uploadedImage) {
+                elements.imagePreview.style.display = 'none';
+                state.uploadedImage = null;
+            }
+
+            const indicator = showTypingIndicator();
+
+            await processMessage(message, imageToSend);
+
+            indicator.remove();
+            elements.sendButton.disabled = false;
+        });
+
+        // Обробка зображень
+        elements.attachButton.addEventListener('click', () => {
+            elements.fileInput.click();
+        });
+
+        elements.fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    state.uploadedImage = event.target.result;
+                    elements.previewImg.src = state.uploadedImage;
+                    elements.imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        elements.removeImage.addEventListener('click', () => {
+            state.uploadedImage = null;
+            elements.imagePreview.style.display = 'none';
+            elements.fileInput.value = '';
+        });
+
+        // Автозміна висоти textarea
+        elements.messageInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Ініціалізація
+        createRain();
+
+        // Привітання
+        addMessage('ai', `👋 Вітаю! Я Nka_ai - ваш математичний асистент.
+
+Я допоможу вам розв'язати математичні задачі з детальним поясненням та перевіркою.
+
+**Як я працюю:**
+1. 📊 Аналізую та розв'язую задачу математично
+2. 🔢 Генерую MATLAB/Octave код для перевірки
+3. 📈 Генерую Julia код для перевірки
+4. ✨ Проводжу самокорекцію для покращення розв'язку
+5. ✅ Порівнюю відповіді та даю фінальний результат
+
+**Ви можете:**
+- Написати задачу текстом
+- Завантажити фото із задачею
+- Задати питання з математики
+
+Спробуйте, наприклад: *"Розв'яжи рівняння x² - 5x + 6 = 0"*`);
+
+        // Обробка Ctrl+Enter
+        elements.messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                elements.messageForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Адаптивність дощу
+        window.addEventListener('resize', createRain);
+    </script>
+</body>
+
+</html>
